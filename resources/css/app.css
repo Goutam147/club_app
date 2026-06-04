@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --color-primary: #1e3a8a;      /* Dark Blue */
+    --color-primary-hover: #1e40af;/* Accent Dark Blue */
+    --color-secondary: #0284c7;    /* Sky Blue */
+    --color-secondary-hover: #0369a1;
+    --color-accent: #38bdf8;       /* Accent Light Blue */
+    --color-light: #f0f9ff;        /* Very Light Sky Blue */
+}
