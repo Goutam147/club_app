@@ -22,6 +22,12 @@ class Transaction extends Model
         'created_by',
     ];
 
+    protected $casts = [
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
+        'amount' => 'decimal:2',
+    ];
+
     protected static function boot()
     {
         parent::boot();

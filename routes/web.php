@@ -8,6 +8,7 @@ use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\RolePermissionController;
 use Illuminate\Support\Facades\Route;
 
 // Public Pages
@@ -78,6 +79,15 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:TH|President'])->group(function () {
         Route::post('/transactions/{transaction}/approve', [TransactionController::class, 'approve'])->name('transactions.approve');
         Route::post('/transactions/{transaction}/reject', [TransactionController::class, 'reject'])->name('transactions.reject');
+    });
+
+    // Roles & Permissions management (TH only)
+    Route::middleware(['role:TH'])->group(function () {
+        Route::get('/roles-permissions', [RolePermissionController::class, 'index'])->name('roles-permissions.index');
+        Route::post('/roles', [RolePermissionController::class, 'storeRole'])->name('roles.store');
+        Route::post('/permissions', [RolePermissionController::class, 'storePermission'])->name('permissions.store');
+        Route::post('/roles-permissions/sync', [RolePermissionController::class, 'syncMatrix'])->name('roles-permissions.sync');
+        Route::delete('/roles/{role}', [RolePermissionController::class, 'destroyRole'])->name('roles.destroy');
     });
 });
 

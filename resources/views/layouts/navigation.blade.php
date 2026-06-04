@@ -44,6 +44,11 @@
                             {{ __('Settings') }}
                         </x-nav-link>
                     @endhasanyrole
+                    @role('TH')
+                        <x-nav-link :href="route('roles-permissions.index')" :active="request()->routeIs('roles-permissions.index')">
+                            {{ __('Roles & Permits') }}
+                        </x-nav-link>
+                    @endrole
                 </div>
             </div>
 
@@ -122,6 +127,11 @@
                     {{ __('Settings') }}
                 </x-responsive-nav-link>
             @endhasanyrole
+            @role('TH')
+                <x-responsive-nav-link :href="route('roles-permissions.index')" :active="request()->routeIs('roles-permissions.index')">
+                    {{ __('Roles & Permits') }}
+                </x-responsive-nav-link>
+            @endrole
         </div>
 
         <!-- Responsive Settings Options -->
