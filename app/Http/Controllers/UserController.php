@@ -15,7 +15,12 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('roles')->orderBy('name', 'asc')->get();
+        $users = User::with('roles')
+            ->withSum(['transactions as total_donated' => function ($query) {
+                $query->where('type', 'credit')->where('status', 'approved');
+            }], 'amount')
+            ->orderBy('name', 'asc')
+            ->get();
         $roles = Role::all();
         return view('users.index', compact('users', 'roles'));
     }
@@ -67,5 +72,51 @@ class UserController extends Controller
         $user->syncRoles([$request->role]);
 
         return redirect()->back()->with('success', "Role for {$user->name} updated to {$request->role} successfully.");
+    }
+
+    /**
+     * Show the form for creating a new user.
+     */
+    public function create()
+    {
+        $roles = Role::all();
+        return view('users.create', compact('roles'));
+    }
+
+    /**
+     * Store a newly created user in database.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'phone' => 'required|string|max:20|unique:users,phone',
+            'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|exists:roles,name',
+            'profile' => 'nullable|image|max:2048',
+        ]);
+
+        $profilePath = null;
+        if ($request->hasFile('profile')) {
+            $file = $request->file('profile');
+            $fileName = 'profile_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/profiles'), $fileName);
+            $profilePath = 'uploads/profiles/' . $fileName;
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'password' => Hash::make($request->password),
+            'profile' => $profilePath,
+            'status' => 'active',
+            'created_by' => Auth::id(),
+        ]);
+
+        $user->assignRole($request->role);
+
+        return redirect()->route('users.index')->with('success', "User '{$user->name}' created successfully with role '{$request->role}'.");
     }
 }

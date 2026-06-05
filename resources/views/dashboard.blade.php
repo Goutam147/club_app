@@ -1,6 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-primary leading-tight">
+        <h2 class="font-semibold text-xl text-primary leading-tight flex items-center gap-2">
+            <i class="fa-solid fa-house text-secondary"></i>
             {{ __('Dashboard') }}
         </h2>
     </x-slot>

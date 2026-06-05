@@ -59,4 +59,12 @@ class User extends Authenticatable
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /**
+     * Get the transactions for the user.
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'user_id');
+    }
 }

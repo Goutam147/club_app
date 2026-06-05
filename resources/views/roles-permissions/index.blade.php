@@ -1,24 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-primary leading-tight">
+        <h2 class="font-semibold text-xl text-primary leading-tight flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-secondary"></i>
             {{ __('Roles & Permissions Manager') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
-            
-            @if(session('success'))
-                <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-xl font-semibold shadow-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-sm rounded-xl font-semibold shadow-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
 
             <!-- Add Role Card -->
             <div class="max-w-2xl bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6 text-slate-700">

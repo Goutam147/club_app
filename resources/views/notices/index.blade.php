@@ -1,18 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-primary leading-tight">
+        <h2 class="font-semibold text-xl text-primary leading-tight flex items-center gap-2">
+            <i class="fa-solid fa-bullhorn text-secondary"></i>
             {{ __('Club Notices Board') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            
-            @if(session('success'))
-                <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-xl font-semibold shadow-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             <!-- Admin Create Notice form -->
             @hasanyrole('TH|President|Secretary')

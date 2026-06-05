@@ -1,24 +1,20 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-primary leading-tight">
-            {{ __('Member Directory') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-primary leading-tight flex items-center gap-2">
+                <i class="fa-solid fa-users text-secondary"></i>
+                {{ __('Member Directory') }}
+            </h2>
+            @can('manage_users')
+                <a href="{{ route('users.create') }}" class="px-4 py-2 bg-secondary hover:bg-secondary-hover text-white text-xs font-bold rounded-xl shadow-md transition duration-150">
+                    + Add New Member
+                </a>
+            @endcan
+        </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="pt-[3px] pb-12 sm:py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            
-            @if(session('success'))
-                <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-xl font-semibold shadow-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-sm rounded-xl font-semibold shadow-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
 
             <!-- Users Table Card -->
             <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
@@ -31,10 +27,12 @@
                                 <th class="px-6 py-4">Member</th>
                                 <th class="px-6 py-4">Contact Info</th>
                                 <th class="px-6 py-4">Role/Position</th>
-                                <th class="px-6 py-4">Status</th>
-                                @hasanyrole('TH|President|Secretary')
+                                @can('manage_users')
+                                    <th class="px-6 py-4">Status</th>
                                     <th class="px-6 py-4 text-right">Actions</th>
-                                @endhasanyrole
+                                @else
+                                    <th class="px-6 py-4">Total Donated</th>
+                                @endcan
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50 text-slate-600">
@@ -50,7 +48,9 @@
                                         @endif
                                         <div>
                                             <span class="font-bold text-slate-800 block text-base">{{ $user->name }}</span>
-                                            <span class="text-xs text-slate-400">Registered {{ $user->created_at->format('M d, Y') }}</span>
+                                            @can('manage_users')
+                                                <span class="text-xs text-slate-400">Registered {{ $user->created_at->format('M d, Y') }}</span>
+                                            @endcan
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 space-y-1">
@@ -68,16 +68,15 @@
                                             {{ $user->roles->pluck('name')->join(', ') ?: 'No Role Assigned' }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2.5 py-1 text-xs font-extrabold rounded-full tracking-wide uppercase 
-                                            @if($user->status === 'active') bg-emerald-100 text-emerald-800 
-                                            @elseif($user->status === 'inactive') bg-rose-100 text-rose-800 
-                                            @else bg-amber-100 text-amber-800 @endif">
-                                            {{ $user->status }}
-                                        </span>
-                                    </td>
-                                    
-                                    @hasanyrole('TH|President|Secretary')
+                                    @can('manage_users')
+                                        <td class="px-6 py-4">
+                                            <span class="px-2.5 py-1 text-xs font-extrabold rounded-full tracking-wide uppercase 
+                                                @if($user->status === 'active') bg-emerald-100 text-emerald-800 
+                                                @elseif($user->status === 'inactive') bg-rose-100 text-rose-800 
+                                                @else bg-amber-100 text-amber-800 @endif">
+                                                {{ $user->status }}
+                                            </span>
+                                        </td>
                                         <td class="px-6 py-4 text-right space-y-2">
                                             <!-- Role Modifier -->
                                             <form method="POST" action="{{ route('users.updateRole', $user) }}" class="inline-block">
@@ -99,7 +98,11 @@
                                                 </select>
                                             </form>
                                         </td>
-                                    @endhasanyrole
+                                    @else
+                                        <td class="px-6 py-4 font-black text-emerald-600">
+                                            ₹{{ number_format($user->total_donated ?? 0, 2) }}
+                                        </td>
+                                    @endcan
                                 </tr>
                             @endforeach
                         </tbody>

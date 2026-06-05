@@ -30,6 +30,7 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
+                'phone' => '1112223334',
             ]);
 
         $response
@@ -40,6 +41,7 @@ class ProfileTest extends TestCase
 
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
+        $this->assertSame('1112223334', $user->phone);
         $this->assertNull($user->email_verified_at);
     }
 
@@ -52,6 +54,7 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => $user->email,
+                'phone' => $user->phone ?? '1234567890',
             ]);
 
         $response
@@ -61,39 +64,78 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_profile_page_displays_total_donated(): void
     {
         $user = User::factory()->create();
 
+        // Create approved credit transaction
+        \App\Models\Transaction::create([
+            'user_id' => $user->id,
+            'amount' => 500.00,
+            'type' => 'credit',
+            'method' => 'cash',
+            'status' => 'approved',
+            'created_by' => $user->id,
+        ]);
+
+        // Create pending credit transaction (should not sum)
+        \App\Models\Transaction::create([
+            'user_id' => $user->id,
+            'amount' => 250.00,
+            'type' => 'credit',
+            'method' => 'bank',
+            'status' => 'pending',
+            'created_by' => $user->id,
+        ]);
+
+        // Create approved debit transaction (should not sum)
+        \App\Models\Transaction::create([
+            'user_id' => $user->id,
+            'amount' => 100.00,
+            'type' => 'debit',
+            'method' => 'cash',
+            'status' => 'approved',
+            'created_by' => $user->id,
+        ]);
+
         $response = $this
             ->actingAs($user)
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
+            ->get('/profile');
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertSoftDeleted($user);
+        $response->assertOk();
+        $response->assertSee('Total Donated');
+        $response->assertSee('500.00');
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account(): void
+    public function test_user_can_fetch_paginated_transactions_json(): void
     {
         $user = User::factory()->create();
 
+        // Create a transaction
+        $transaction = \App\Models\Transaction::create([
+            'transaction_id' => '123456789',
+            'user_id' => $user->id,
+            'amount' => 1500.00,
+            'type' => 'credit',
+            'method' => 'bank',
+            'status' => 'approved',
+            'created_by' => $user->id,
+        ]);
+
         $response = $this
             ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
+            ->getJson(route('profile.transactions'));
 
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->fresh());
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'transactions',
+            'has_more',
+            'current_page',
+        ]);
+        
+        $data = $response->json();
+        $this->assertCount(1, $data['transactions']);
+        $this->assertEquals('1,500.00', $data['transactions'][0]['amount']);
+        $this->assertEquals('Bank', $data['transactions'][0]['method']);
     }
 }

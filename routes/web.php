@@ -26,7 +26,7 @@ Route::middleware(['auth'])->group(function () {
     // User Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile/transactions', [ProfileController::class, 'transactions'])->name('profile.transactions');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -48,12 +48,17 @@ Route::middleware(['auth'])->group(function () {
     // Gallery List
     Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
 
-    // Admins (TH, President, Secretary) Restricted Routes
-    Route::middleware(['role:TH|President|Secretary'])->group(function () {
-        // Pending Registrations
+    // User management (Anyone with manage_users permission)
+    Route::middleware(['can:manage_users'])->group(function () {
         Route::get('/users/pending', [UserController::class, 'pending'])->name('users.pending');
         Route::post('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.updateStatus');
         Route::post('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.updateRole');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    });
+
+    // Admins (TH, President, Secretary) Restricted Routes
+    Route::middleware(['role:TH|President|Secretary'])->group(function () {
 
         // Notices Admin Actions
         Route::post('/notices', [NoticeController::class, 'store'])->name('notices.store');
@@ -88,6 +93,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/permissions', [RolePermissionController::class, 'storePermission'])->name('permissions.store');
         Route::post('/roles-permissions/sync', [RolePermissionController::class, 'syncMatrix'])->name('roles-permissions.sync');
         Route::delete('/roles/{role}', [RolePermissionController::class, 'destroyRole'])->name('roles.destroy');
+
+        // User management moved to manage_users middleware
     });
 });
 
