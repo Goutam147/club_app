@@ -11,37 +11,40 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-4">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-3">
 
             <!-- Filters Bar -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
-                <form method="GET" action="{{ route('transactions.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end text-slate-700">
-                    <div>
-                        <x-input-label for="status" :value="__('Filter by Status')" />
-                        <select name="status" id="status" class="block mt-1 w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+            <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-4 sm:p-6">
+                <div class="flex flex-row gap-2 sm:gap-4 items-end text-slate-700">
+                    @can('manage_transactions')
+                    <div class="flex-1 min-w-0">
+                        <x-input-label for="filter-status" :value="__('Status')" />
+                        <select id="filter-status" class="block mt-1 w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="">All Statuses</option>
-                            <option value="pending" @selected(request('status') === 'pending')>Pending</option>
-                            <option value="approved" @selected(request('status') === 'approved')>Approved</option>
-                            <option value="rejected" @selected(request('status') === 'rejected')>Rejected</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
                         </select>
                     </div>
+                    @endcan
 
-                    <div>
-                        <x-input-label for="type" :value="__('Filter by Type')" />
-                        <select name="type" id="type" class="block mt-1 w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    <div class="flex-1 min-w-0">
+                        <x-input-label for="filter-type" :value="__('Type')" />
+                        <select id="filter-type" class="block mt-1 w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="">All Types</option>
-                            <option value="credit" @selected(request('type') === 'credit')>Credit (Deposit)</option>
-                            <option value="debit" @selected(request('type') === 'debit')>Debit (Expense)</option>
+                            <option value="credit">Credit (Deposit)</option>
+                            <option value="debit">Debit (Expense)</option>
                         </select>
                     </div>
 
-                    <div>
-                        <button type="submit" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-xl transition duration-150">
-                            Apply Filters
+                    <div class="flex-shrink-0">
+                        <button type="button" id="btn-filter" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-xl transition duration-150 whitespace-nowrap flex items-center gap-1.5">
+                            <i class="fa-solid fa-filter text-xs"></i>
+                            <span>Filter</span>
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
 
             <!-- Transactions List Card -->
@@ -52,112 +55,202 @@
                     <table class="min-w-full divide-y divide-slate-100 text-sm text-left">
                         <thead class="bg-light text-slate-700 uppercase tracking-wider text-xs font-bold">
                             <tr>
-                                <th class="px-6 py-4">TXN ID & Date</th>
-                                <th class="px-6 py-4">User</th>
-                                <th class="px-6 py-4">Amount</th>
-                                <th class="px-6 py-4">Method & Type</th>
-                                <th class="px-6 py-4">Document</th>
-                                <th class="px-6 py-4">Status & Details</th>
-                                @hasanyrole('TH|President')
-                                    <th class="px-6 py-4 text-right">Actions</th>
-                                @endhasanyrole
+                                <th class="px-3 py-2 min-w-[150px]">TXN ID & Date</th>
+                                <th class="px-3 py-2 min-w-[150px]">Member</th>
+                                <th class="px-3 py-2">Amount</th>
+                                <th class="px-3 py-2">Method & Type</th> 
+                                <th class="px-3 py-2">Document</th>
+                                <th class="px-3 py-2">Status & Details</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-50 text-slate-600">
-                            @forelse($transactions as $txn)
-                                <tr class="hover:bg-slate-50/50 transition duration-150">
-                                    <td class="px-6 py-4">
-                                        <span class="font-mono font-bold text-slate-800 text-sm block">{{ $txn->transaction_id ?? 'PENDING' }}</span>
-                                        <span class="text-xs text-slate-400">{{ $txn->created_at->format('M d, Y g:i A') }}</span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="font-semibold block text-slate-800">{{ $txn->user->name ?? 'Deleted User' }}</span>
-                                        <span class="text-xs text-slate-400">{{ $txn->user->email ?? '' }}</span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="font-extrabold text-base block @if($txn->type === 'credit') text-emerald-600 @else text-rose-600 @endif">
-                                            @if($txn->type === 'credit') + @else - @endif ₹{{ number_format($txn->amount, 2) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $txn->method }}</div>
-                                        <div class="text-[10px] text-slate-400">{{ $txn->type }}</div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        @if($txn->document_url)
-                                            <a href="{{ asset($txn->document_url) }}" target="_blank" class="text-xs font-bold text-secondary hover:text-secondary-hover flex items-center gap-1">
-                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                                View Receipt
-                                            </a>
-                                        @else
-                                            <span class="text-xs text-slate-400 italic">No Document</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 space-y-1">
-                                        <div>
-                                            <span class="px-2.5 py-1 text-xs font-extrabold rounded-full tracking-wide uppercase 
-                                                @if($txn->status === 'approved') bg-emerald-100 text-emerald-800 
-                                                @elseif($txn->status === 'rejected') bg-rose-100 text-rose-800 
-                                                @else bg-amber-100 text-amber-800 @endif">
-                                                {{ $txn->status }}
-                                            </span>
-                                        </div>
-                                        
-                                        <!-- Approver details -->
-                                        @if($txn->status === 'approved' && $txn->approvedBy)
-                                            <div class="text-[10px] text-slate-400">
-                                                Approved by {{ $txn->approvedBy->name }} on {{ $txn->approved_at->format('M d') }}
-                                            </div>
-                                        @elseif($txn->status === 'rejected' && $txn->rejectedBy)
-                                            <div class="text-[10px] text-slate-400">
-                                                Rejected by {{ $txn->rejectedBy->name }} on {{ $txn->rejected_at->format('M d') }}
-                                            </div>
-                                        @endif
-
-                                        @if($txn->remark)
-                                            <div class="text-xs text-slate-500 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 mt-1 max-w-xs truncate" title="{{ $txn->remark }}">
-                                                {{ $txn->remark }}
-                                            </div>
-                                        @endif
-                                    </td>
-                                    
-                                    @hasanyrole('TH|President')
-                                        <td class="px-6 py-4 text-right space-y-2">
-                                            @if($txn->status === 'pending')
-                                                <!-- Approve -->
-                                                <form method="POST" action="{{ route('transactions.approve', $txn) }}" class="inline-block">
-                                                    @csrf
-                                                    <button type="submit" class="px-2.5 py-1.5 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-sm transition duration-150">
-                                                        Approve
-                                                    </button>
-                                                </form>
-
-                                                <!-- Reject Form inline text -->
-                                                <form method="POST" action="{{ route('transactions.reject', $txn) }}" class="inline-block ms-1">
-                                                    @csrf
-                                                    <input type="text" name="reject_reason" placeholder="Reason" class="text-[10px] px-2 py-1 rounded-lg border-slate-200 w-24 focus:ring-rose-500 focus:border-rose-500">
-                                                    <button type="submit" class="px-2.5 py-1.5 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 rounded-lg shadow-sm transition duration-150">
-                                                        Reject
-                                                    </button>
-                                                </form>
-                                            @else
-                                                <span class="text-xs text-slate-400">-</span>
-                                            @endif
-                                        </td>
-                                    @endhasanyrole
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="px-6 py-8 text-center text-slate-400 text-sm">
-                                        No transactions recorded.
-                                    </td>
-                                </tr>
-                            @endforelse
+                        <tbody id="txn-tbody" class="divide-y divide-slate-50 text-slate-600">
+                            <!-- Rows inserted by JS -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Empty State (hidden by default) -->
+                <div id="txn-empty" class="hidden px-6 py-8 text-center text-slate-400 text-sm">
+                    No transactions recorded.
+                </div>
+
+                <!-- Load More Button -->
+                <div id="txn-load-more" class="hidden mt-6 flex justify-center">
+                    <button type="button" id="btn-load-more" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md transition duration-150 flex items-center gap-2">
+                        Show More
+                    </button>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="txn-loading" class="mt-6 flex justify-center">
+                    <svg class="animate-spin h-6 w-6 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                 </div>
             </div>
 
         </div>
     </div>
+
+    <script>
+    (function() {
+        const API_URL = "{{ route('transactions.load') }}";
+        const tbody = document.getElementById('txn-tbody');
+        const emptyEl = document.getElementById('txn-empty');
+        const loadMoreWrap = document.getElementById('txn-load-more');
+        const loadingEl = document.getElementById('txn-loading');
+        const btnLoadMore = document.getElementById('btn-load-more');
+        const btnFilter = document.getElementById('btn-filter');
+        const filterStatus = document.getElementById('filter-status');
+        const filterType = document.getElementById('filter-type');
+
+        let lastId = null;
+        let hasMore = false;
+        let loading = false;
+        let canManage = false;
+        let totalLoaded = 0;
+
+        function buildRow(txn) {
+            // Amount color
+            const amountClass = txn.type === 'credit' ? 'text-emerald-600' : 'text-rose-600';
+
+            // Document cell
+            let docHtml = '';
+            if (txn.document_url) {
+                docHtml = `<a href="${txn.document_url}" target="_blank" class="text-xs font-bold text-secondary hover:text-secondary-hover flex items-center gap-1">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    View Receipt</a>`;
+            } else {
+                docHtml = `<span class="text-xs text-slate-400 italic">No Document</span>`;
+            }
+
+            // Status & Details cell
+            let statusHtml = '';
+            if (canManage) {
+                // Status badge
+                let badgeClass = 'bg-amber-100 text-amber-800';
+                if (txn.status === 'approved') badgeClass = 'bg-emerald-100 text-emerald-800';
+                else if (txn.status === 'rejected') badgeClass = 'bg-rose-100 text-rose-800';
+
+                statusHtml = `<div><span class="px-2.5 py-1 text-xs font-extrabold rounded-full tracking-wide uppercase ${badgeClass}">${txn.status}</span></div>`;
+
+                // Approver/Rejector details
+                if (txn.status === 'approved' && txn.approved_by_name) {
+                    statusHtml += `<div class="text-[10px] text-slate-400 mt-1">Approved by ${txn.approved_by_name} on ${txn.approved_at}</div>`;
+                } else if (txn.status === 'rejected' && txn.rejected_by_name) {
+                    statusHtml += `<div class="text-[10px] text-slate-400 mt-1">Rejected by ${txn.rejected_by_name} on ${txn.rejected_at}</div>`;
+                }
+
+                // Remark
+                if (txn.remark) {
+                    statusHtml += `<div class="text-xs text-slate-500 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 mt-1 max-w-xs truncate" title="${txn.remark}">${txn.remark}</div>`;
+                }
+            } else {
+                // Non-manager: show only description
+                if (txn.remark) {
+                    statusHtml = `<div class="text-xs text-slate-500 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 max-w-xs truncate" title="${txn.remark}">${txn.remark}</div>`;
+                } else {
+                    statusHtml = `<span class="text-xs text-slate-400 italic">No description</span>`;
+                }
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50/50 transition duration-150';
+            tr.innerHTML = `
+                <td class="px-3 py-2 min-w-[150px] whitespace-nowrap">
+                    <span class="font-mono font-bold text-slate-800 text-sm block whitespace-nowrap">${txn.transaction_id || 'PENDING'}</span>
+                    <span class="text-xs text-slate-400 block whitespace-nowrap">${txn.created_at}</span>
+                </td>
+                <td class="px-3 py-2">
+                    <span class="font-semibold block text-slate-800">${txn.user_name}</span>
+                </td>
+                <td class="px-3 py-2">
+                    <span class="font-extrabold text-base block ${amountClass}">₹${txn.amount}</span>
+                </td>
+                <td class="px-3 py-2">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-500">${txn.method}</div>
+                    <div class="text-[10px] text-slate-400">${txn.type}</div>
+                </td>
+                <td class="px-3 py-2">${docHtml}</td>
+                <td class="px-3 py-2 space-y-1">${statusHtml}</td>
+            `;
+            return tr;
+        }
+
+        function fetchTransactions() {
+            if (loading) return;
+            loading = true;
+            loadingEl.classList.remove('hidden');
+            loadMoreWrap.classList.add('hidden');
+
+            // Build URL with params
+            const params = new URLSearchParams();
+            if (lastId) params.set('last_id', lastId);
+            const status = filterStatus ? filterStatus.value : '';
+            const type = filterType ? filterType.value : '';
+            if (status) params.set('status', status);
+            if (type) params.set('type', type);
+
+            const url = API_URL + '?' + params.toString();
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                canManage = data.can_manage;
+                hasMore = data.has_more;
+
+                const txns = data.transactions;
+                txns.forEach(function(txn) {
+                    tbody.appendChild(buildRow(txn));
+                    lastId = txn.id; // Track last id for cursor
+                });
+
+                totalLoaded += txns.length;
+
+                // Show/hide empty state
+                if (totalLoaded === 0) {
+                    emptyEl.classList.remove('hidden');
+                } else {
+                    emptyEl.classList.add('hidden');
+                }
+
+                // Show/hide load more button
+                if (hasMore) {
+                    loadMoreWrap.classList.remove('hidden');
+                } else {
+                    loadMoreWrap.classList.add('hidden');
+                }
+
+                loading = false;
+                loadingEl.classList.add('hidden');
+            })
+            .catch(function(err) {
+                console.error('Error loading transactions:', err);
+                loading = false;
+                loadingEl.classList.add('hidden');
+            });
+        }
+
+        // Load More button click
+        btnLoadMore.addEventListener('click', function() {
+            fetchTransactions();
+        });
+
+        // Apply Filters button click — reset and reload
+        btnFilter.addEventListener('click', function() {
+            lastId = null;
+            totalLoaded = 0;
+            hasMore = false;
+            tbody.innerHTML = '';
+            emptyEl.classList.add('hidden');
+            fetchTransactions();
+        });
+
+        // Initial load on page ready
+        fetchTransactions();
+    })();
+    </script>
 </x-app-layout>

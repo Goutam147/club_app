@@ -36,6 +36,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Transactions Management
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transactions/load', [TransactionController::class, 'load'])->name('transactions.load');
     Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
     Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
 

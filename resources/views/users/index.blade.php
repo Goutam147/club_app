@@ -18,7 +18,9 @@
 
             <!-- Users Table Card -->
             <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
-                <h3 class="text-lg font-bold text-slate-800 mb-6">Bhimchak Sunrise Club Directory</h3>
+                <h3 class="text-lg font-bold text-slate-800 mb-6">
+                    Total Member : {{ $users->where('status', 'active')->count() }}
+                </h3>
                 
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 text-sm text-left">

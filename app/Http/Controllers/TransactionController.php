@@ -10,21 +10,40 @@ use Illuminate\Support\Facades\Auth;
 class TransactionController extends Controller
 {
     /**
-     * Display a listing of transactions.
-     * Members see only their own. Admins (TH, President, Secretary) see all.
+     * Display the transactions page (empty shell, data loaded via JS).
      */
-    public function index(Request $request)
+    public function index()
+    {
+        return view('transactions.index');
+    }
+
+    /**
+     * API: Load transactions with cursor-based pagination.
+     * Returns 15 records with id < last_id (or latest 15 if no last_id).
+     * - Users with manage_transactions: see all records.
+     * - Users without: see only approved records + their own.
+     */
+    public function load(Request $request)
     {
         $user = Auth::user();
-        
-        $query = Transaction::with(['user', 'approvedBy', 'rejectedBy', 'creator']);
+        $perPage = 15;
 
-        // Check if user has admin privileges
-        if (!$user->hasAnyRole(['TH', 'President', 'Secretary'])) {
-            $query->where('user_id', $user->id);
+        $query = Transaction::with(['user', 'approvedBy', 'rejectedBy']);
+
+        // Permission-based filtering
+        if (!$user->can('manage_transactions')) {
+            $query->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('status', 'approved');
+            });
         }
 
-        // Apply filters if present
+        // Cursor: get records with id < last_id
+        if ($request->filled('last_id')) {
+            $query->where('id', '<', $request->last_id);
+        }
+
+        // Optional filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -32,8 +51,40 @@ class TransactionController extends Controller
             $query->where('type', $request->type);
         }
 
-        $transactions = $query->orderBy('created_at', 'desc')->get();
-        return view('transactions.index', compact('transactions'));
+        $transactions = $query->orderBy('id', 'desc')->limit($perPage + 1)->get();
+
+        // Check if there are more records beyond the 15 we return
+        $hasMore = $transactions->count() > $perPage;
+        if ($hasMore) {
+            $transactions = $transactions->take($perPage);
+        }
+
+        $canManage = $user->can('manage_transactions');
+
+        $data = $transactions->map(function ($t) use ($canManage) {
+            return [
+                'id' => $t->id,
+                'transaction_id' => $t->transaction_id,
+                'amount' => number_format($t->amount, 2),
+                'type' => $t->type,
+                'method' => $t->method,
+                'document_url' => $t->document_url ? asset($t->document_url) : null,
+                'status' => $t->status,
+                'remark' => $t->remark,
+                'created_at' => $t->created_at->format('M d, y g:i A'),
+                'user_name' => $t->user->name ?? 'Deleted User',
+                'approved_by_name' => $t->approvedBy ? $t->approvedBy->name : null,
+                'approved_at' => $t->approved_at ? $t->approved_at->format('M d') : null,
+                'rejected_by_name' => $t->rejectedBy ? $t->rejectedBy->name : null,
+                'rejected_at' => $t->rejected_at ? $t->rejected_at->format('M d') : null,
+            ];
+        });
+
+        return response()->json([
+            'transactions' => $data->values(),
+            'has_more' => $hasMore,
+            'can_manage' => $canManage,
+        ]);
     }
 
     /**
@@ -41,7 +92,10 @@ class TransactionController extends Controller
      */
     public function create()
     {
-        $users = User::where('status', 'active')->orderBy('name', 'asc')->get();
+        $users = [];
+        if (Auth::user()->can('manage_transactions')) {
+            $users = User::where('status', 'active')->orderBy('name', 'asc')->get();
+        }
         return view('transactions.create', compact('users'));
     }
 
@@ -51,19 +105,19 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        $isAdmin = $user->hasAnyRole(['TH', 'President', 'Secretary']);
+        $hasManageTransactions = $user->can('manage_transactions');
+        $hasApproveTransactions = $user->can('approve_transactions');
 
         $rules = [
             'amount' => 'required|numeric|min:0.01',
-            'type' => 'required|in:credit,debit',
             'method' => 'required|in:cash,bank',
             'remark' => 'nullable|string|max:500',
             'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:4096', // 4MB max
         ];
 
-        // If admin, they can select any user, else it's for the logged in user
-        if ($isAdmin) {
+        if ($hasManageTransactions) {
             $rules['user_id'] = 'required|exists:users,id';
+            $rules['type'] = 'required|in:credit,debit';
         }
 
         $request->validate($rules);
@@ -76,18 +130,31 @@ class TransactionController extends Controller
             $documentPath = 'uploads/transactions/' . $fileName;
         }
 
+        $userId = $hasManageTransactions ? $request->user_id : $user->id;
+        $type = $hasManageTransactions ? $request->type : 'credit';
+
+        $status = $hasApproveTransactions ? 'approved' : 'pending';
+        $approvedAt = $hasApproveTransactions ? now() : null;
+        $approvedBy = $hasApproveTransactions ? $user->id : null;
+
         Transaction::create([
-            'user_id' => $isAdmin ? $request->user_id : $user->id,
+            'user_id' => $userId,
             'amount' => $request->amount,
-            'type' => $request->type,
+            'type' => $type,
             'method' => $request->method,
             'remark' => $request->remark,
             'document_url' => $documentPath,
-            'status' => 'pending',
+            'status' => $status,
+            'approved_at' => $approvedAt,
+            'approved_by' => $approvedBy,
             'created_by' => $user->id,
         ]);
 
-        return redirect()->route('transactions.index')->with('success', 'Transaction submitted successfully and is pending approval.');
+        $message = $status === 'approved' 
+            ? 'Transaction recorded and approved successfully.'
+            : 'Transaction submitted successfully and is pending approval.';
+
+        return redirect()->route('transactions.index')->with('success', $message);
     }
 
     /**
