@@ -32,8 +32,8 @@ class ProfileController extends Controller
      */
     public function transactions(Request $request): \Illuminate\Http\JsonResponse
     {
-        $user = $request->user();
-        $transactions = \App\Models\Transaction::where('user_id', $user->id)
+        $user = auth()->user()->id;
+        $transactions = \App\Models\Transaction::where('user_id', $user)
             ->with(['approvedBy:id,name', 'rejectedBy:id,name'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);

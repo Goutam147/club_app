@@ -18,9 +18,22 @@
 
             <!-- Users Table Card -->
             <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
-                <h3 class="text-lg font-bold text-slate-800 mb-6">
-                    Total Member : {{ $users->where('status', 'active')->count() }}
-                </h3>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-slate-800">
+                        Total Member : {{ $users->where('status', 'active')->count() }}
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <label for="month-filter" class="text-xs font-bold text-slate-500 whitespace-nowrap hidden sm:inline">Monthly Status:</label>
+                        <select id="month-filter" onchange="window.location.href='{{ route('users.index') }}?month=' + this.value" class="rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm py-1.5 pl-3 pr-8 font-bold text-slate-700 cursor-pointer">
+                            @php
+                                $months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                            @endphp
+                            @foreach($months as $index => $monthName)
+                                <option value="{{ $index + 1 }}" @selected($selectedMonth == $index + 1)>{{ $monthName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
                 
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 text-sm text-left">
@@ -29,11 +42,11 @@
                                 <th class="px-6 py-4">Member</th>
                                 <th class="px-6 py-4">Contact Info</th>
                                 <th class="px-6 py-4">Role/Position</th>
+                                <th class="px-6 py-4">Total Donated</th>
+                                <th class="px-6 py-4">Monthly Status</th>
                                 @can('manage_users')
                                     <th class="px-6 py-4">Status</th>
                                     <th class="px-6 py-4 text-right">Actions</th>
-                                @else
-                                    <th class="px-6 py-4">Total Donated</th>
                                 @endcan
                             </tr>
                         </thead>
@@ -70,6 +83,21 @@
                                             {{ $user->roles->pluck('name')->join(', ') ?: 'No Role Assigned' }}
                                         </span>
                                     </td>
+                                    <td class="px-6 py-4 font-black text-emerald-600">
+                                        ₹{{ number_format($user->total_donated ?? 0, 2) }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        @php
+                                            $balance = $user->monthly_balance ?? 0;
+                                        @endphp
+                                        @if($balance > 0)
+                                            <span class="font-extrabold text-emerald-600">+₹{{ number_format($balance, 2) }}</span>
+                                        @elseif($balance < 0)
+                                            <span class="font-extrabold text-rose-600">-₹{{ number_format(abs($balance), 2) }}</span>
+                                        @else
+                                            <span class="font-bold text-slate-400">₹0.00</span>
+                                        @endif
+                                    </td>
                                     @can('manage_users')
                                         <td class="px-6 py-4">
                                             <span class="px-2.5 py-1 text-xs font-extrabold rounded-full tracking-wide uppercase 
@@ -99,10 +127,6 @@
                                                     <option value="inactive" @selected($user->status === 'inactive')>Inactive</option>
                                                 </select>
                                             </form>
-                                        </td>
-                                    @else
-                                        <td class="px-6 py-4 font-black text-emerald-600">
-                                            ₹{{ number_format($user->total_donated ?? 0, 2) }}
                                         </td>
                                     @endcan
                                 </tr>

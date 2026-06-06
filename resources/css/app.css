@@ -10,3 +10,4 @@
     --color-accent: #38bdf8;       /* Accent Light Blue */
     --color-light: #f0f9ff;        /* Very Light Sky Blue */
 }
+[x-cloak] { display: none !important; }

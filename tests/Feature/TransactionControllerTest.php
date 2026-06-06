@@ -174,6 +174,9 @@ class TransactionControllerTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonCount(3, 'transactions');
         $response->assertJsonPath('can_manage', true);
+        $response->assertJsonPath('total_credit', '200.00');
+        $response->assertJsonPath('total_debit', '0.00');
+        $response->assertJsonPath('current_balance', '200.00');
     }
 
     public function test_user_without_manage_transactions_sees_approved_and_own_via_api()
@@ -209,6 +212,9 @@ class TransactionControllerTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'transactions'); // own pending + other approved
         $response->assertJsonPath('can_manage', false);
+        $response->assertJsonPath('total_credit', '222.00');
+        $response->assertJsonPath('total_debit', '0.00');
+        $response->assertJsonPath('current_balance', '222.00');
 
         $amounts = collect($response->json('transactions'))->pluck('amount')->toArray();
         $this->assertContains('111.00', $amounts);

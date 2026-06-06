@@ -81,8 +81,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/maintenance', [SettingController::class, 'toggleMaintenance'])->name('settings.toggleMaintenance');
     });
 
-    // Transaction Approval/Rejection (TH and President only)
-    Route::middleware(['role:TH|President'])->group(function () {
+    // Transaction Approval (approve_transactions permission)
+    Route::middleware(['can:approve_transactions'])->group(function () {
+        Route::get('/transactions/approvals', [TransactionController::class, 'approvals'])->name('transactions.approvals');
+        Route::get('/transactions/approvals/load', [TransactionController::class, 'loadPending'])->name('transactions.approvals.load');
         Route::post('/transactions/{transaction}/approve', [TransactionController::class, 'approve'])->name('transactions.approve');
         Route::post('/transactions/{transaction}/reject', [TransactionController::class, 'reject'])->name('transactions.reject');
     });

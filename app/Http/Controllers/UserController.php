@@ -13,16 +13,38 @@ class UserController extends Controller
     /**
      * Display a listing of active/inactive users (Member Directory).
      */
-    public function index()
+    public function index(Request $request)
     {
+        // Month filter: default to current month (1-12)
+        $selectedMonth = $request->input('month', now()->month);
+        $selectedYear = now()->year;
+
         $users = User::with('roles')
             ->withSum(['transactions as total_donated' => function ($query) {
                 $query->where('type', 'credit')->where('status', 'approved');
             }], 'amount')
+            ->withSum(['transactions as monthly_credit' => function ($query) use ($selectedMonth, $selectedYear) {
+                $query->where('type', 'credit')
+                      ->where('status', 'approved')
+                      ->whereMonth('created_at', $selectedMonth)
+                      ->whereYear('created_at', $selectedYear);
+            }], 'amount')
+            ->withSum(['transactions as monthly_debit' => function ($query) use ($selectedMonth, $selectedYear) {
+                $query->where('type', 'debit')
+                      ->where('status', 'approved')
+                      ->whereMonth('created_at', $selectedMonth)
+                      ->whereYear('created_at', $selectedYear);
+            }], 'amount')
             ->orderBy('name', 'asc')
             ->get();
+
+        // Calculate monthly balance for each user
+        $users->each(function ($user) {
+            $user->monthly_balance = ($user->monthly_credit ?? 0) - ($user->monthly_debit ?? 0);
+        });
+
         $roles = Role::all();
-        return view('users.index', compact('users', 'roles'));
+        return view('users.index', compact('users', 'roles', 'selectedMonth'));
     }
 
     /**

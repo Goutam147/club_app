@@ -105,6 +105,32 @@
                 </div>
             </div>
 
+            <!-- Update Profile Form Expandable Card -->
+            <div x-show="activeForm === 'profile'" x-cloak
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform -translate-y-4"
+                x-transition:enter-end="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 transform translate-y-0"
+                x-transition:leave-end="opacity-0 transform -translate-y-4"
+                class="p-6 bg-white shadow-xl rounded-3xl border border-slate-100"
+                style="display: none;">
+                @include('profile.partials.update-profile-information-form')
+            </div>
+
+            <!-- Update Password Form Expandable Card -->
+            <div x-show="activeForm === 'password'" x-cloak
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform -translate-y-4"
+                x-transition:enter-end="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 transform translate-y-0"
+                x-transition:leave-end="opacity-0 transform -translate-y-4"
+                class="p-6 bg-white shadow-xl rounded-3xl border border-slate-100"
+                style="display: none;">
+                @include('profile.partials.update-password-form')
+            </div>
+
             <!-- Premium Mobile-Style Transaction History Card -->
             <div class="bg-white overflow-hidden shadow-xl rounded-3xl border border-slate-100 p-6 space-y-4"
                 x-data="{
@@ -249,7 +275,7 @@
                         <button type="button" 
                             @click="fetchTransactions()" 
                             :disabled="loading"
-                            class="inline-flex items-center gap-1.5 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black rounded-xl transition duration-150 disabled:opacity-50">
+                            class="inline-flex items-center gap-1.5 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black rounded-xl transition duration-150 disabled:opacity-50 cursor-pointer">
                             <span x-show="!loading">Show More</span>
                             <span x-show="loading" class="flex items-center gap-1 justify-center">
                                 <svg class="animate-spin h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24">
@@ -263,31 +289,7 @@
                 </template>
             </div>
 
-            <!-- Update Profile Form Expandable Card -->
-            <div x-show="activeForm === 'profile'" 
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 transform scale-95"
-                x-transition:enter-end="opacity-100 transform scale-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 transform scale-100"
-                x-transition:leave-end="opacity-0 transform scale-95"
-                class="p-6 bg-white shadow-xl rounded-3xl border border-slate-100"
-                style="display: none;">
-                @include('profile.partials.update-profile-information-form')
-            </div>
 
-            <!-- Update Password Form Expandable Card -->
-            <div x-show="activeForm === 'password'" 
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 transform scale-95"
-                x-transition:enter-end="opacity-100 transform scale-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 transform scale-100"
-                x-transition:leave-end="opacity-0 transform scale-95"
-                class="p-6 bg-white shadow-xl rounded-3xl border border-slate-100"
-                style="display: none;">
-                @include('profile.partials.update-password-form')
-            </div>
 
         </div>
     </div>

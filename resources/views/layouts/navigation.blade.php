@@ -23,6 +23,17 @@
                     <x-nav-link :href="route('transactions.index')" :active="request()->routeIs('transactions.index')">
                         {{ __('Transactions') }}
                     </x-nav-link>
+                    @can('approve_transactions')
+                        <x-nav-link :href="route('transactions.approvals')" :active="request()->routeIs('transactions.approvals')">
+                            {{ __('Approvals') }}
+                            @php
+                                $pendingTxnCount = \App\Models\Transaction::where('status', 'pending')->count();
+                            @endphp
+                            @if($pendingTxnCount > 0)
+                                <span class="ms-1 px-2 py-0.5 text-xs rounded-full bg-amber-500 text-white font-bold">{{ $pendingTxnCount }}</span>
+                            @endif
+                        </x-nav-link>
+                    @endcan
                     <x-nav-link :href="route('notices.index')" :active="request()->routeIs('notices.index')">
                         {{ __('Notices') }}
                     </x-nav-link>
@@ -120,14 +131,14 @@
         </a>
 
         <!-- More Drawer trigger -->
-        <button type="button" @click="moreOpen = !moreOpen" :class="moreOpen ? 'text-primary' : 'text-slate-400 hover:text-slate-600'" class="flex flex-col items-center gap-0.5 text-[10px] font-extrabold tracking-tight transition duration-150 focus:outline-none">
-            <i class="fa-solid fa-bars text-lg"></i>
-            <span>More</span>
+        <button type="button" @click="moreOpen = !moreOpen" :class="moreOpen ? 'text-primary' : 'text-slate-400 hover:text-slate-600'" class="flex flex-col items-center gap-0.5 text-[10px] font-extrabold tracking-tight transition duration-150 focus:outline-none cursor-pointer">
+            <i class="fa-solid fa-bars text-lg pointer-events-none"></i>
+            <span class="pointer-events-none">More</span>
         </button>
     </nav>
 
     <!-- Mobile Bottom Sheet Backdrop -->
-    <div x-show="moreOpen" 
+    <div x-show="moreOpen" x-cloak
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -140,7 +151,7 @@
     </div>
 
     <!-- Mobile Bottom Sheet Panel -->
-    <div x-show="moreOpen"
+    <div x-show="moreOpen" x-cloak
          x-transition:enter="transition ease-out duration-300 transform"
          x-transition:enter-start="translate-y-full"
          x-transition:enter-end="translate-y-0"
@@ -183,6 +194,24 @@
                 </div>
                 <span class="text-xs font-bold text-slate-750">Gallery</span>
             </a>
+
+            @can('approve_transactions')
+                <!-- Approve Transactions -->
+                <a href="{{ route('transactions.approvals') }}" class="flex flex-col items-center gap-2 group relative">
+                    <div class="h-12 w-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 hover:bg-amber-600 hover:text-white transition duration-150 shadow-sm">
+                        <i class="fa-solid fa-clipboard-check text-lg"></i>
+                    </div>
+                    <span class="text-xs font-bold text-slate-750">Approvals</span>
+                    @php
+                        $mobilePendingTxnCount = \App\Models\Transaction::where('status', 'pending')->count();
+                    @endphp
+                    @if($mobilePendingTxnCount > 0)
+                        <span class="absolute top-0 right-4 h-4 w-4 bg-amber-500 text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-sm">
+                            {{ $mobilePendingTxnCount }}
+                        </span>
+                    @endif
+                </a>
+            @endcan
 
             @hasanyrole('TH|President|Secretary')
                 <!-- Pending Approvals -->

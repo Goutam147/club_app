@@ -91,16 +91,65 @@ class UserControllerTest extends TestCase
         $response = $this->actingAs($admin)->get('/users');
         $response->assertStatus(200);
         $response->assertSee('Registered');
-        $response->assertSee('Status');
+        $response->assertSee('<th class="px-6 py-4">Status</th>', false);
         $response->assertSee('Actions');
-        $response->assertDontSee('Total Donated');
+        $response->assertSee('Total Donated');
 
         // Member visit directory
         $response = $this->actingAs($member)->get('/users');
         $response->assertStatus(200);
         $response->assertDontSee('Registered');
-        $response->assertDontSee('Status');
+        $response->assertDontSee('<th class="px-6 py-4">Status</th>', false);
         $response->assertDontSee('Actions');
         $response->assertSee('Total Donated');
     }
+
+    public function test_member_directory_calculates_and_displays_monthly_status()
+    {
+        $member = User::factory()->create(['status' => 'active', 'name' => 'Alice Member']);
+        $member->assignRole('Member');
+
+        $currentMonth = now()->month;
+
+        // Transaction in current month: credit 500
+        \App\Models\Transaction::create([
+            'user_id' => $member->id,
+            'amount' => 500.00,
+            'type' => 'credit',
+            'status' => 'approved',
+        ]);
+
+        // Transaction in current month: debit 200
+        \App\Models\Transaction::create([
+            'user_id' => $member->id,
+            'amount' => 200.00,
+            'type' => 'debit',
+            'status' => 'approved',
+        ]);
+
+        // Transaction in another month: credit 1000
+        $t = \App\Models\Transaction::create([
+            'user_id' => $member->id,
+            'amount' => 1000.00,
+            'type' => 'credit',
+            'status' => 'approved',
+        ]);
+        $t->created_at = now()->month == 1 ? now()->month(2) : now()->month(1);
+        $t->save();
+
+        $otherMonth = $t->created_at->month;
+
+        // Visit index (default current month)
+        $response = $this->actingAs($member)->get('/users');
+        $response->assertStatus(200);
+        // Balance: +₹300.00
+        $response->assertSee('+₹300.00');
+
+        // Visit index for other month
+        $response = $this->actingAs($member)->get('/users?month=' . $otherMonth);
+        $response->assertStatus(200);
+        // Balance: +₹1,000.00
+        $response->assertSee('+₹1,000.00');
+    }
 }
+

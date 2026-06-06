@@ -80,10 +80,26 @@ class TransactionController extends Controller
             ];
         });
 
+        // Calculate totals based on permissions (ignoring dropdown filters and cursor pagination)
+        $totalsQuery = Transaction::query();
+        if (!$user->can('manage_transactions')) {
+            $totalsQuery->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('status', 'approved');
+            });
+        }
+
+        $totalCredit = (clone $totalsQuery)->where('status', 'approved')->where('type', 'credit')->sum('amount');
+        $totalDebit = (clone $totalsQuery)->where('status', 'approved')->where('type', 'debit')->sum('amount');
+        $currentBalance = $totalCredit - $totalDebit;
+
         return response()->json([
             'transactions' => $data->values(),
             'has_more' => $hasMore,
             'can_manage' => $canManage,
+            'total_credit' => number_format($totalCredit, 2),
+            'total_debit' => number_format($totalDebit, 2),
+            'current_balance' => number_format($currentBalance, 2),
         ]);
     }
 
@@ -158,13 +174,72 @@ class TransactionController extends Controller
     }
 
     /**
+     * Display the approvals page (only for users with approve_transactions permission).
+     */
+    public function approvals()
+    {
+        return view('transactions.approvals');
+    }
+
+    /**
+     * API: Load pending transactions for approval page.
+     */
+    public function loadPending(Request $request)
+    {
+        $user = Auth::user();
+        $perPage = 15;
+
+        $query = Transaction::with(['user', 'creator'])
+            ->where('status', 'pending');
+
+        // Cursor pagination
+        if ($request->filled('last_id')) {
+            $query->where('id', '<', $request->last_id);
+        }
+
+        $transactions = $query->orderBy('id', 'desc')->limit($perPage + 1)->get();
+
+        $hasMore = $transactions->count() > $perPage;
+        if ($hasMore) {
+            $transactions = $transactions->take($perPage);
+        }
+
+        $data = $transactions->map(function ($t) {
+            return [
+                'id' => $t->id,
+                'transaction_id' => $t->transaction_id,
+                'amount' => number_format($t->amount, 2),
+                'type' => $t->type,
+                'method' => $t->method,
+                'document_url' => $t->document_url ? asset($t->document_url) : null,
+                'remark' => $t->remark,
+                'created_at' => $t->created_at->format('M d, y g:i A'),
+                'user_name' => $t->user->name ?? 'Deleted User',
+                'user_profile' => $t->user && $t->user->profile ? asset($t->user->profile) : null,
+                'created_by_name' => $t->creator ? $t->creator->name : null,
+            ];
+        });
+
+        $pendingCount = Transaction::where('status', 'pending')->count();
+
+        return response()->json([
+            'transactions' => $data->values(),
+            'has_more' => $hasMore,
+            'pending_count' => $pendingCount,
+        ]);
+    }
+
+    /**
      * Approve transaction.
      */
     public function approve(Transaction $transaction)
     {
         $user = Auth::user();
-        if (!$user->hasAnyRole(['TH', 'President'])) {
-            return redirect()->back()->with('error', 'Only Technical Head or President can approve transactions.');
+        if (!$user->can('approve_transactions')) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+            return redirect()->back()->with('error', 'You do not have permission to approve transactions.');
         }
 
         $transaction->update([
@@ -173,6 +248,9 @@ class TransactionController extends Controller
             'approved_by' => $user->id,
         ]);
 
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Transaction approved successfully.']);
+        }
         return redirect()->back()->with('success', 'Transaction approved successfully.');
     }
 
@@ -182,17 +260,26 @@ class TransactionController extends Controller
     public function reject(Transaction $transaction, Request $request)
     {
         $user = Auth::user();
-        if (!$user->hasAnyRole(['TH', 'President'])) {
-            return redirect()->back()->with('error', 'Only Technical Head or President can reject transactions.');
+        if (!$user->can('approve_transactions')) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+            return redirect()->back()->with('error', 'You do not have permission to reject transactions.');
         }
+
+        $rejectReason = $request->input('reject_reason', 'N/A');
+        $remark = $transaction->remark ? $transaction->remark . ' | Rejection: ' . $rejectReason : 'Rejection: ' . $rejectReason;
 
         $transaction->update([
             'status' => 'rejected',
-            'remark' => $transaction->remark . ' (Rejected comment: ' . $request->input('reject_reason', 'N/A') . ')',
+            'remark' => $remark,
             'rejected_at' => now(),
             'rejected_by' => $user->id,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Transaction rejected successfully.']);
+        }
         return redirect()->back()->with('success', 'Transaction rejected successfully.');
     }
 }

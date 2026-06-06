@@ -14,9 +14,52 @@
     <div class="py-4">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-3">
 
-            <!-- Filters Bar -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-4 sm:p-6">
-                <div class="flex flex-row gap-2 sm:gap-4 items-end text-slate-700">
+            <!-- Filters & Stats Bar -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-4 sm:p-6 space-y-4">
+                <!-- Stats Cards Grid -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-4 text-slate-700">
+                    <!-- Total Credit Card -->
+                    <div class="bg-emerald-50/40 border border-emerald-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] sm:text-xs text-emerald-700 font-bold uppercase tracking-wider">Credit</span>
+                            <div class="h-5 w-5 sm:h-7 sm:w-7 bg-emerald-100/80 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px] sm:text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-1 sm:mt-2">
+                            <span id="stat-credit" class="text-sm sm:text-xl md:text-2xl font-extrabold text-emerald-800 block truncate">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Debit Card -->
+                    <div class="bg-rose-50/40 border border-rose-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] sm:text-xs text-rose-700 font-bold uppercase tracking-wider">Debit</span>
+                            <div class="h-5 w-5 sm:h-7 sm:w-7 bg-rose-100/80 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-arrow-trend-down text-rose-600 text-[10px] sm:text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-1 sm:mt-2">
+                            <span id="stat-debit" class="text-sm sm:text-xl md:text-2xl font-extrabold text-rose-800 block truncate">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Current Balance Card -->
+                    <div class="bg-indigo-50/40 border border-indigo-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] sm:text-xs text-indigo-700 font-bold uppercase tracking-wider">Balance</span>
+                            <div class="h-5 w-5 sm:h-7 sm:w-7 bg-indigo-100/80 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-scale-balanced text-indigo-600 text-[10px] sm:text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-1 sm:mt-2">
+                            <span id="stat-balance" class="text-sm sm:text-xl md:text-2xl font-extrabold text-indigo-800 block truncate">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Row -->
+                <div class="flex flex-row gap-2 sm:gap-4 items-end text-slate-700 border-t border-slate-100 pt-3 sm:pt-4">
                     @can('manage_transactions')
                     <div class="flex-1 min-w-0">
                         <x-input-label for="filter-status" :value="__('Status')" />
@@ -201,6 +244,11 @@
             .then(function(data) {
                 canManage = data.can_manage;
                 hasMore = data.has_more;
+
+                // Update stats cards
+                document.getElementById('stat-credit').textContent = '₹' + data.total_credit;
+                document.getElementById('stat-debit').textContent = '₹' + data.total_debit;
+                document.getElementById('stat-balance').textContent = '₹' + data.current_balance;
 
                 const txns = data.transactions;
                 txns.forEach(function(txn) {
