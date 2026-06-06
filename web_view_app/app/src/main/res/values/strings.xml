@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BSC</string>
+    
+    <!-- Offline view strings -->
+    <string name="offline_title">No Internet Connection</string>
+    <string name="offline_subtitle">Please check your internet settings and try again.</string>
+    <string name="btn_retry">Try Again</string>
+</resources>
