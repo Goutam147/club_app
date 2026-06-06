@@ -14,6 +14,15 @@ use Illuminate\Support\Facades\Route;
 // Public Pages
 Route::get('/', [DashboardController::class, 'welcome'])->name('welcome');
 
+Route::get('/clear-cache', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        return 'All cache cleared successfully!';
+    } catch (\Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
+});
+
 Route::get('/maintenance', function () {
     $club = \App\Models\ClubMaster::first();
     $message = \App\Models\Setting::where('key', 'maintenance_message')->value('value') 
