@@ -23,7 +23,9 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      run: chmod +x web_view_app/gradlew
+      run: |
+        sed -i 's/\r$//' web_view_app/gradlew
+        chmod +x web_view_app/gradlew
 
     - name: Build with Gradle
       run: |
