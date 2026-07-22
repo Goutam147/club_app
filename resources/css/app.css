@@ -12,15 +12,23 @@
 }
 [x-cloak] { display: none !important; }
 
-/* Mobile WebView Smooth Momentum Touch Scrolling for Tables */
-.overflow-x-auto, .overflow-y-auto, .overflow-auto {
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y;
-    will-change: transform;
-    transform: translateZ(0);
+/* Mobile WebView Smooth Horizontal Touch Scrolling for Tables */
+.overflow-x-auto {
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+    overscroll-behavior-x: contain !important;
 }
 
-table {
-    -webkit-overflow-scrolling: touch;
+/* Ensure table inside overflow container has sufficient width for smooth scrolling */
+.overflow-x-auto > table {
+    min-width: 600px;
+    width: max-content;
 }
 
+/* Prevent cell text wrapping inside table headers and cells for clean horizontal layout */
+.overflow-x-auto th,
+.overflow-x-auto td {
+    white-space: nowrap;
+}

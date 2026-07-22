@@ -1,11 +1,13 @@
 package com.bsc.clubapp
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.View
 import android.webkit.*
 import android.widget.Button
@@ -15,6 +17,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +29,9 @@ class MainActivity : AppCompatActivity() {
 
     private val baseUrl = "https://club.goutam.fun/"
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    private var startX = 0f
+    private var startY = 0f
 
     // Register modern Activity Result API for handling file choose requests from WebView
     private val fileChooserLauncher = registerForActivityResult(
@@ -76,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         loadUrl(baseUrl)
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         // Enable hardware acceleration layer for smooth scrolling & rendering
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
@@ -185,10 +192,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupListeners() {
-        // Prevent SwipeRefreshLayout from stealing scroll gestures when scrolling web tables/content
-        webView.viewTreeObserver.addOnScrollChangedListener {
-            swipeRefreshLayout.isEnabled = (webView.scrollY == 0)
+        // Prevent SwipeRefreshLayout from stealing horizontal touch gestures when scrolling web tables
+        webView.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    startX = event.x
+                    startY = event.y
+                    swipeRefreshLayout.requestDisallowInterceptTouchEvent(true)
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = abs(event.x - startX)
+                    val dy = abs(event.y - startY)
+
+                    // If user is swiping horizontally or scrolling inside the page
+                    if (dx > dy && dx > 5) {
+                        swipeRefreshLayout.requestDisallowInterceptTouchEvent(true)
+                        swipeRefreshLayout.isEnabled = false
+                    } else if (dy > dx && webView.scrollY > 0) {
+                        swipeRefreshLayout.requestDisallowInterceptTouchEvent(true)
+                        swipeRefreshLayout.isEnabled = false
+                    } else if (dy > dx && webView.scrollY == 0 && event.y > startY) {
+                        swipeRefreshLayout.requestDisallowInterceptTouchEvent(false)
+                        swipeRefreshLayout.isEnabled = true
+                    }
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    swipeRefreshLayout.isEnabled = (webView.scrollY == 0)
+                }
+            }
+            false
         }
 
         swipeRefreshLayout.setOnRefreshListener {
