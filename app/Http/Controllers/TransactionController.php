@@ -28,14 +28,18 @@ class TransactionController extends Controller
         $user = Auth::user();
         $perPage = 15;
 
+        // Check if user has administrative transaction roles
+        $canSeeAllTransactions = $user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']);
+
         $query = Transaction::with(['user', 'approvedBy', 'rejectedBy']);
 
-        // Permission-based filtering
-        if (!$user->can('manage_transactions')) {
-            $query->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->orWhere('status', 'approved');
-            });
+        // Filtering rule:
+        // - TH, President, Secretary, Cashier roles see all transactions (approved, pending, rejected)
+        // - All other users see ONLY approved transactions
+        if (!$canSeeAllTransactions) {
+            $query->where('status', 'approved');
+        } else if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         // Cursor: get records with id < last_id
@@ -43,10 +47,7 @@ class TransactionController extends Controller
             $query->where('id', '<', $request->last_id);
         }
 
-        // Optional filters
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        // Optional type filter (credit / debit)
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
@@ -59,9 +60,7 @@ class TransactionController extends Controller
             $transactions = $transactions->take($perPage);
         }
 
-        $canManage = $user->can('manage_transactions');
-
-        $data = $transactions->map(function ($t) use ($canManage) {
+        $data = $transactions->map(function ($t) use ($canSeeAllTransactions) {
             return [
                 'id' => $t->id,
                 'transaction_id' => $t->transaction_id,
@@ -80,23 +79,15 @@ class TransactionController extends Controller
             ];
         });
 
-        // Calculate totals based on permissions (ignoring dropdown filters and cursor pagination)
-        $totalsQuery = Transaction::query();
-        if (!$user->can('manage_transactions')) {
-            $totalsQuery->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->orWhere('status', 'approved');
-            });
-        }
-
-        $totalCredit = (clone $totalsQuery)->where('status', 'approved')->where('type', 'credit')->sum('amount');
-        $totalDebit = (clone $totalsQuery)->where('status', 'approved')->where('type', 'debit')->sum('amount');
+        // Calculate totals based on approved transactions
+        $totalCredit = Transaction::where('status', 'approved')->where('type', 'credit')->sum('amount');
+        $totalDebit = Transaction::where('status', 'approved')->where('type', 'debit')->sum('amount');
         $currentBalance = $totalCredit - $totalDebit;
 
         return response()->json([
             'transactions' => $data->values(),
             'has_more' => $hasMore,
-            'can_manage' => $canManage,
+            'can_manage' => $canSeeAllTransactions,
             'total_credit' => number_format($totalCredit, 2),
             'total_debit' => number_format($totalDebit, 2),
             'current_balance' => number_format($currentBalance, 2),
@@ -108,8 +99,9 @@ class TransactionController extends Controller
      */
     public function create()
     {
+        $user = Auth::user();
         $users = [];
-        if (Auth::user()->can('manage_transactions')) {
+        if ($user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']) || $user->can('manage_transactions')) {
             $users = User::where('status', 'active')->orderBy('name', 'asc')->get();
         }
         return view('transactions.create', compact('users'));
@@ -121,8 +113,8 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        $hasManageTransactions = $user->can('manage_transactions');
-        $hasApproveTransactions = $user->can('approve_transactions');
+        $hasManageTransactions = $user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']) || $user->can('manage_transactions');
+        $hasApproveTransactions = $user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']) || $user->can('approve_transactions');
 
         $rules = [
             'amount' => 'required|numeric|min:0.01',

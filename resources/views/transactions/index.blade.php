@@ -60,17 +60,17 @@
 
                 <!-- Filters Row -->
                 <div class="flex flex-row gap-2 sm:gap-4 items-end text-slate-700 border-t border-slate-100 pt-3 sm:pt-4">
-                    @can('manage_transactions')
+                    @if(auth()->user()->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']))
                     <div class="flex-1 min-w-0">
                         <x-input-label for="filter-status" :value="__('Status')" />
                         <select id="filter-status" class="block mt-1 w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="">All Statuses</option>
-                            <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
                             <option value="rejected">Rejected</option>
                         </select>
                     </div>
-                    @endcan
+                    @endif
 
                     <div class="flex-1 min-w-0">
                         <x-input-label for="filter-type" :value="__('Type')" />

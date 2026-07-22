@@ -40,6 +40,7 @@ class DatabaseSeeder extends Seeder
         $thRole = Role::firstOrCreate(['name' => 'TH']);
         $presidentRole = Role::firstOrCreate(['name' => 'President']);
         $secretaryRole = Role::firstOrCreate(['name' => 'Secretary']);
+        $cashierRole = Role::firstOrCreate(['name' => 'Cashier']);
         $memberRole = Role::firstOrCreate(['name' => 'Member']);
 
         // Sync default permissions to roles
@@ -51,6 +52,10 @@ class DatabaseSeeder extends Seeder
             'manage_notices',
             'manage_events',
             'manage_gallery',
+        ]);
+        $cashierRole->syncPermissions([
+            'manage_transactions',
+            'approve_transactions',
         ]);
 
         // 2. Create Users
