@@ -77,6 +77,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupWebView() {
+        // Enable hardware acceleration layer for smooth scrolling & rendering
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -84,6 +87,8 @@ class MainActivity : AppCompatActivity() {
             useWideViewPort = true
             loadWithOverviewMode = true
             cacheMode = WebSettings.LOAD_DEFAULT
+            @Suppress("DEPRECATION")
+            setRenderPriority(WebSettings.RenderPriority.HIGH)
             
             // Set custom user agent to identify requests coming from Android app
             val defaultUserAgent = userAgentString
@@ -181,6 +186,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // Prevent SwipeRefreshLayout from stealing scroll gestures when scrolling web tables/content
+        webView.viewTreeObserver.addOnScrollChangedListener {
+            swipeRefreshLayout.isEnabled = (webView.scrollY == 0)
+        }
+
         swipeRefreshLayout.setOnRefreshListener {
             if (isNetworkAvailable()) {
                 webView.reload()

@@ -11,3 +11,16 @@
     --color-light: #f0f9ff;        /* Very Light Sky Blue */
 }
 [x-cloak] { display: none !important; }
+
+/* Mobile WebView Smooth Momentum Touch Scrolling for Tables */
+.overflow-x-auto, .overflow-y-auto, .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+table {
+    -webkit-overflow-scrolling: touch;
+}
+
