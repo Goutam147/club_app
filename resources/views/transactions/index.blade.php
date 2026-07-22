@@ -60,7 +60,7 @@
 
                 <!-- Filters Row -->
                 <div class="flex flex-row gap-2 sm:gap-4 items-end text-slate-700 border-t border-slate-100 pt-3 sm:pt-4">
-                    @if(auth()->user()->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']))
+                    @if(auth()->user()->can('manage_transactions') || auth()->user()->can('approve_transactions'))
                     <div class="flex-1 min-w-0">
                         <x-input-label for="filter-status" :value="__('Status')" />
                         <select id="filter-status" class="block mt-1 w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
@@ -91,22 +91,22 @@
             </div>
 
             <!-- Transactions List Card -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
+            <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-4 sm:p-6">
                 <h3 class="text-lg font-bold text-slate-800 mb-6">Transactions History</h3>
                 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-100 text-sm text-left">
-                        <thead class="bg-light text-slate-700 uppercase tracking-wider text-xs font-bold">
+                <div class="overflow-x-auto rounded-xl border border-slate-100">
+                    <table class="w-full min-w-full divide-y divide-slate-100 text-sm text-left">
+                        <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider text-xs font-bold">
                             <tr>
-                                <th class="px-3 py-2 min-w-[150px]">TXN ID & Date</th>
-                                <th class="px-3 py-2 min-w-[150px]">Member</th>
-                                <th class="px-3 py-2">Amount</th>
-                                <th class="px-3 py-2">Method & Type</th> 
-                                <th class="px-3 py-2">Document</th>
-                                <th class="px-3 py-2">Status & Details</th>
+                                <th class="px-4 py-3.5 whitespace-nowrap">TXN ID & Date</th>
+                                <th class="px-4 py-3.5 whitespace-nowrap">Member</th>
+                                <th class="px-4 py-3.5 whitespace-nowrap">Amount</th>
+                                <th class="px-4 py-3.5 whitespace-nowrap">Method & Type</th> 
+                                <th class="px-4 py-3.5 whitespace-nowrap">Document</th>
+                                <th class="px-4 py-3.5 whitespace-nowrap">Status & Details</th>
                             </tr>
                         </thead>
-                        <tbody id="txn-tbody" class="divide-y divide-slate-50 text-slate-600">
+                        <tbody id="txn-tbody" class="divide-y divide-slate-50 text-slate-600 bg-white">
                             <!-- Rows inserted by JS -->
                         </tbody>
                     </table>
@@ -161,7 +161,7 @@
             // Document cell
             let docHtml = '';
             if (txn.document_url) {
-                docHtml = `<a href="${txn.document_url}" target="_blank" class="text-xs font-bold text-secondary hover:text-secondary-hover flex items-center gap-1">
+                docHtml = `<a href="${txn.document_url}" target="_blank" class="text-xs font-bold text-secondary hover:text-secondary-hover inline-flex items-center gap-1">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     View Receipt</a>`;
             } else {
@@ -199,24 +199,24 @@
             }
 
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-slate-50/50 transition duration-150';
+            tr.className = 'hover:bg-slate-50/60 transition duration-150';
             tr.innerHTML = `
-                <td class="px-3 py-2 min-w-[150px] whitespace-nowrap">
-                    <span class="font-mono font-bold text-slate-800 text-sm block whitespace-nowrap">${txn.transaction_id || 'PENDING'}</span>
-                    <span class="text-xs text-slate-400 block whitespace-nowrap">${txn.created_at}</span>
+                <td class="px-4 py-3.5 whitespace-nowrap">
+                    <span class="font-mono font-bold text-slate-800 text-sm block">${txn.transaction_id || 'PENDING'}</span>
+                    <span class="text-xs text-slate-400 block mt-0.5">${txn.created_at}</span>
                 </td>
-                <td class="px-3 py-2">
-                    <span class="font-semibold block text-slate-800">${txn.user_name}</span>
+                <td class="px-4 py-3.5 whitespace-nowrap">
+                    <span class="font-bold block text-slate-800 text-sm">${txn.user_name}</span>
                 </td>
-                <td class="px-3 py-2">
-                    <span class="font-extrabold text-base block ${amountClass}">₹${txn.amount}</span>
+                <td class="px-4 py-3.5 whitespace-nowrap">
+                    <span class="font-black text-base block ${amountClass}">₹${txn.amount}</span>
                 </td>
-                <td class="px-3 py-2">
-                    <div class="text-xs font-bold uppercase tracking-wider text-slate-500">${txn.method}</div>
-                    <div class="text-[10px] text-slate-400">${txn.type}</div>
+                <td class="px-4 py-3.5 whitespace-nowrap">
+                    <div class="text-xs font-extrabold uppercase tracking-wider text-slate-700">${txn.method}</div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase mt-0.5">${txn.type}</div>
                 </td>
-                <td class="px-3 py-2">${docHtml}</td>
-                <td class="px-3 py-2 space-y-1">${statusHtml}</td>
+                <td class="px-4 py-3.5 whitespace-nowrap">${docHtml}</td>
+                <td class="px-4 py-3.5 whitespace-nowrap space-y-1">${statusHtml}</td>
             `;
             return tr;
         }

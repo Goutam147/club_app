@@ -91,9 +91,9 @@
                                             $balance = $user->monthly_balance ?? 0;
                                         @endphp
                                         @if($balance > 0)
-                                            <span class="font-extrabold text-emerald-600">+₹{{ number_format($balance, 2) }}</span>
+                                            <span class="font-extrabold text-emerald-600">₹{{ number_format($balance, 2) }}</span>
                                         @elseif($balance < 0)
-                                            <span class="font-extrabold text-rose-600">-₹{{ number_format(abs($balance), 2) }}</span>
+                                            <span class="font-extrabold text-rose-600">₹{{ number_format(abs($balance), 2) }}</span>
                                         @else
                                             <span class="font-bold text-slate-400">₹0.00</span>
                                         @endif

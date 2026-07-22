@@ -69,7 +69,7 @@ class RolePermissionController extends Controller
      */
     public function destroyRole(Role $role)
     {
-        $protectedRoles = ['TH', 'President', 'Secretary', 'Member'];
+        $protectedRoles = ['TH', 'President', 'Secretary', 'Cashier', 'Member'];
         if (in_array($role->name, $protectedRoles)) {
             return redirect()->route('roles-permissions.index')->with('error', "Core role '{$role->name}' cannot be deleted.");
         }

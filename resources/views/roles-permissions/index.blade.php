@@ -48,7 +48,7 @@
                                                     <span class="px-3 py-1.5 bg-light text-primary text-xs font-black rounded-lg uppercase border border-blue-100 shadow-sm">
                                                         {{ $role->name }}
                                                     </span>
-                                                    @if(!in_array($role->name, ['TH', 'President', 'Secretary', 'Member']))
+                                                    @if(!in_array($role->name, ['TH', 'President', 'Secretary', 'Cashier', 'Member']))
                                                         <button type="button" 
                                                             onclick="if(confirm('Are you sure you want to delete the role \'{{ $role->name }}\'?')) { 
                                                                 let form = document.getElementById('delete-role-form'); 

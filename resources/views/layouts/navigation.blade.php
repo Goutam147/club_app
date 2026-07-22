@@ -1,24 +1,24 @@
 <!-- Desktop Sticky Top Navigation Bar (Hidden on Mobile) -->
 <nav x-data="{ open: false }" class="bg-white border-b border-slate-100 sticky top-0 z-40 hidden sm:block">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+        <div class="flex justify-between h-16 items-center gap-2">
+            <div class="flex items-center gap-2 lg:gap-4 min-w-0 flex-1">
                 <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-black text-primary tracking-tight">
-                        <x-application-logo class="block h-9 w-auto fill-current text-primary" />
-                        <span>BSC PORTAL</span>
+                <div class="shrink-0 flex items-center me-2">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-black text-primary tracking-tight whitespace-nowrap">
+                        <x-application-logo class="block h-8 w-auto fill-current text-primary" />
+                        <span class="hidden md:inline">BSC PORTAL</span>
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden sm:flex items-center space-x-1 md:space-x-2 lg:space-x-3 h-16 overflow-x-auto no-scrollbar">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
-                        {{ __('Member Directory') }}
+                        {{ __('Members') }}
                     </x-nav-link>
                     <x-nav-link :href="route('transactions.index')" :active="request()->routeIs('transactions.index')">
                         {{ __('Transactions') }}
@@ -30,7 +30,7 @@
                                 $pendingTxnCount = \App\Models\Transaction::where('status', 'pending')->count();
                             @endphp
                             @if($pendingTxnCount > 0)
-                                <span class="ms-1 px-2 py-0.5 text-xs rounded-full bg-amber-500 text-white font-bold">{{ $pendingTxnCount }}</span>
+                                <span class="ms-1 px-1.5 py-0.5 text-[10px] rounded-full bg-amber-500 text-white font-bold">{{ $pendingTxnCount }}</span>
                             @endif
                         </x-nav-link>
                     @endcan
@@ -45,12 +45,12 @@
                     </x-nav-link>
                     @hasanyrole('TH|President|Secretary')
                         <x-nav-link :href="route('users.pending')" :active="request()->routeIs('users.pending')">
-                            {{ __('Pending Members') }}
+                            {{ __('Pending') }}
                             @php
                                 $pendingCount = \App\Models\User::where('status', 'pending')->count();
                             @endphp
                             @if($pendingCount > 0)
-                                <span class="ms-1 px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">{{ $pendingCount }}</span>
+                                <span class="ms-1 px-1.5 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-bold">{{ $pendingCount }}</span>
                             @endif
                         </x-nav-link>
                         <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.index')">
@@ -59,20 +59,20 @@
                     @endhasanyrole
                     @role('TH')
                         <x-nav-link :href="route('roles-permissions.index')" :active="request()->routeIs('roles-permissions.index')">
-                            {{ __('Roles & Permits') }}
+                            {{ __('Roles') }}
                         </x-nav-link>
                     @endrole
                 </div>
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <div class="hidden sm:flex sm:items-center shrink-0">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                        <button class="inline-flex items-center px-2.5 py-1.5 border border-slate-200 text-xs sm:text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition ease-in-out duration-150 whitespace-nowrap shadow-sm">
                             <div>{{ Auth::user()->name }}</div>
                             <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <svg class="fill-current h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
                             </div>

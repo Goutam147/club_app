@@ -28,13 +28,15 @@ class TransactionController extends Controller
         $user = Auth::user();
         $perPage = 15;
 
-        // Check if user has administrative transaction roles
-        $canSeeAllTransactions = $user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']);
+        // Dynamic permission check: users with manage_transactions OR approve_transactions can see all statuses
+        $hasManage = $user->can('manage_transactions');
+        $hasApprove = $user->can('approve_transactions');
+        $canSeeAllTransactions = $hasManage || $hasApprove;
 
         $query = Transaction::with(['user', 'approvedBy', 'rejectedBy']);
 
         // Filtering rule:
-        // - TH, President, Secretary, Cashier roles see all transactions (approved, pending, rejected)
+        // - Users with manage_transactions or approve_transactions permission see all statuses (approved, pending, rejected)
         // - All other users see ONLY approved transactions
         if (!$canSeeAllTransactions) {
             $query->where('status', 'approved');
@@ -101,7 +103,7 @@ class TransactionController extends Controller
     {
         $user = Auth::user();
         $users = [];
-        if ($user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']) || $user->can('manage_transactions')) {
+        if ($user->can('manage_transactions')) {
             $users = User::where('status', 'active')->orderBy('name', 'asc')->get();
         }
         return view('transactions.create', compact('users'));
@@ -113,8 +115,8 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        $hasManageTransactions = $user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']) || $user->can('manage_transactions');
-        $hasApproveTransactions = $user->hasAnyRole(['TH', 'President', 'Secretary', 'Cashier']) || $user->can('approve_transactions');
+        $hasManageTransactions = $user->can('manage_transactions');
+        $hasApproveTransactions = $user->can('approve_transactions');
 
         $rules = [
             'amount' => 'required|numeric|min:0.01',
@@ -141,6 +143,7 @@ class TransactionController extends Controller
         $userId = $hasManageTransactions ? $request->user_id : $user->id;
         $type = $hasManageTransactions ? $request->type : 'credit';
 
+        // Direct approval only if user has approve_transactions permission
         $status = $hasApproveTransactions ? 'approved' : 'pending';
         $approvedAt = $hasApproveTransactions ? now() : null;
         $approvedBy = $hasApproveTransactions ? $user->id : null;

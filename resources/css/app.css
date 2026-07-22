@@ -14,6 +14,7 @@
 
 /* Mobile WebView Smooth Horizontal Touch Scrolling for Tables */
 .overflow-x-auto {
+    width: 100%;
     overflow-x: auto !important;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch !important;
@@ -21,14 +22,8 @@
     overscroll-behavior-x: contain !important;
 }
 
-/* Ensure table inside overflow container has sufficient width for smooth scrolling */
+/* Ensure table inside overflow container spans full 100% container width */
 .overflow-x-auto > table {
-    min-width: 600px;
-    width: max-content;
-}
-
-/* Prevent cell text wrapping inside table headers and cells for clean horizontal layout */
-.overflow-x-auto th,
-.overflow-x-auto td {
-    white-space: nowrap;
+    width: 100% !important;
+    min-width: 100% !important;
 }
