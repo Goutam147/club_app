@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Models\TransactionItem;
+use App\Models\FeeType;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
@@ -20,8 +23,6 @@ class TransactionController extends Controller
     /**
      * API: Load transactions with cursor-based pagination.
      * Returns 15 records with id < last_id (or latest 15 if no last_id).
-     * - Users with manage_transactions: see all records.
-     * - Users without: see only approved records + their own.
      */
     public function load(Request $request)
     {
@@ -33,11 +34,9 @@ class TransactionController extends Controller
         $hasApprove = $user->can('approve_transactions');
         $canSeeAllTransactions = $hasManage || $hasApprove;
 
-        $query = Transaction::with(['user', 'approvedBy', 'rejectedBy']);
+        $query = Transaction::with(['user', 'approvedBy', 'rejectedBy', 'items.feeType']);
 
         // Filtering rule:
-        // - Users with manage_transactions or approve_transactions permission see all statuses (approved, pending, rejected)
-        // - All other users see ONLY approved transactions
         if (!$canSeeAllTransactions) {
             $query->where('status', 'approved');
         } else if ($request->filled('status')) {
@@ -73,11 +72,22 @@ class TransactionController extends Controller
                 'status' => $t->status,
                 'remark' => $t->remark,
                 'created_at' => $t->created_at->format('M d, y g:i A'),
-                'user_name' => $t->user->name ?? 'Deleted User',
+                'user_name' => $t->user ? $t->user->name : ($t->type === 'debit' ? 'Club Expense (Cashier)' : 'General User'),
                 'approved_by_name' => $t->approvedBy ? $t->approvedBy->name : null,
                 'approved_at' => $t->approved_at ? $t->approved_at->format('M d') : null,
                 'rejected_by_name' => $t->rejectedBy ? $t->rejectedBy->name : null,
                 'rejected_at' => $t->rejected_at ? $t->rejected_at->format('M d') : null,
+                'items' => $t->items->map(function ($item) {
+                    $monthName = $item->month ? date('F', mktime(0, 0, 0, $item->month, 10)) : null;
+                    return [
+                        'id' => $item->id,
+                        'title' => $item->title ?? ($item->feeType ? $item->feeType->title : 'General'),
+                        'month' => $item->month,
+                        'month_name' => $monthName,
+                        'year' => $item->year,
+                        'amount' => number_format($item->amount, 2),
+                    ];
+                }),
             ];
         });
 
@@ -106,7 +116,15 @@ class TransactionController extends Controller
         if ($user->can('manage_transactions')) {
             $users = User::where('status', 'active')->orderBy('name', 'asc')->get();
         }
-        return view('transactions.create', compact('users'));
+
+        $feeTypes = FeeType::where('status', 'active')->get();
+        $months = [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
+        ];
+
+        return view('transactions.create', compact('users', 'feeTypes', 'months'));
     }
 
     /**
@@ -122,12 +140,22 @@ class TransactionController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'method' => 'required|in:cash,bank',
             'remark' => 'nullable|string|max:500',
-            'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:4096', // 4MB max
+            'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:4096',
+            'items' => 'nullable|array',
+            'items.*.fee_type_id' => 'nullable|exists:fee_types,id',
+            'items.*.month' => 'nullable|integer|between:1,12',
+            'items.*.year' => 'nullable|integer|min:2020|max:2099',
+            'items.*.title' => 'nullable|string|max:255',
+            'items.*.amount' => 'required_with:items|numeric|min:0.01',
         ];
 
         if ($hasManageTransactions) {
-            $rules['user_id'] = 'required|exists:users,id';
             $rules['type'] = 'required|in:credit,debit';
+            if ($request->input('type') === 'debit') {
+                $rules['user_id'] = 'nullable|exists:users,id';
+            } else {
+                $rules['user_id'] = 'required|exists:users,id';
+            }
         }
 
         $request->validate($rules);
@@ -140,26 +168,50 @@ class TransactionController extends Controller
             $documentPath = 'uploads/transactions/' . $fileName;
         }
 
-        $userId = $hasManageTransactions ? $request->user_id : $user->id;
         $type = $hasManageTransactions ? $request->type : 'credit';
+        $userId = $hasManageTransactions ? ($request->filled('user_id') ? $request->user_id : null) : $user->id;
 
-        // Direct approval only if user has approve_transactions permission
         $status = $hasApproveTransactions ? 'approved' : 'pending';
         $approvedAt = $hasApproveTransactions ? now() : null;
         $approvedBy = $hasApproveTransactions ? $user->id : null;
 
-        Transaction::create([
-            'user_id' => $userId,
-            'amount' => $request->amount,
-            'type' => $type,
-            'method' => $request->method,
-            'remark' => $request->remark,
-            'document_url' => $documentPath,
-            'status' => $status,
-            'approved_at' => $approvedAt,
-            'approved_by' => $approvedBy,
-            'created_by' => $user->id,
-        ]);
+        DB::transaction(function () use ($request, $userId, $type, $status, $approvedAt, $approvedBy, $documentPath, $user) {
+            $transaction = Transaction::create([
+                'user_id' => $userId,
+                'amount' => $request->amount,
+                'type' => $type,
+                'method' => $request->method,
+                'remark' => $request->remark,
+                'document_url' => $documentPath,
+                'status' => $status,
+                'approved_at' => $approvedAt,
+                'approved_by' => $approvedBy,
+                'created_by' => $user->id,
+            ]);
+
+            // Save line items if provided
+            if ($request->filled('items') && is_array($request->items)) {
+                foreach ($request->items as $itemData) {
+                    if (!empty($itemData['amount']) && $itemData['amount'] > 0) {
+                        TransactionItem::create([
+                            'transaction_id' => $transaction->id,
+                            'fee_type_id' => $itemData['fee_type_id'] ?? null,
+                            'month' => $itemData['month'] ?? null,
+                            'year' => $itemData['year'] ?? null,
+                            'title' => $itemData['title'] ?? null,
+                            'amount' => $itemData['amount'],
+                        ]);
+                    }
+                }
+            } else {
+                // Default single line item
+                TransactionItem::create([
+                    'transaction_id' => $transaction->id,
+                    'title' => $type === 'credit' ? 'General Deposit / Dues' : 'Expense / Purchase',
+                    'amount' => $request->amount,
+                ]);
+            }
+        });
 
         $message = $status === 'approved' 
             ? 'Transaction recorded and approved successfully.'

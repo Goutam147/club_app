@@ -8,6 +8,7 @@ use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\FeeTypeController;
 use App\Http\Controllers\RolePermissionController;
 use Illuminate\Support\Facades\Route;
 
@@ -96,6 +97,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/transactions/approvals/load', [TransactionController::class, 'loadPending'])->name('transactions.approvals.load');
         Route::post('/transactions/{transaction}/approve', [TransactionController::class, 'approve'])->name('transactions.approve');
         Route::post('/transactions/{transaction}/reject', [TransactionController::class, 'reject'])->name('transactions.reject');
+    });
+
+    // Fee Management (manage_fees permission)
+    Route::middleware(['can:manage_fees'])->group(function () {
+        Route::get('/fees', [FeeTypeController::class, 'index'])->name('fees.index');
+        Route::post('/fees', [FeeTypeController::class, 'store'])->name('fees.store');
+        Route::put('/fees/{feeType}', [FeeTypeController::class, 'update'])->name('fees.update');
+        Route::delete('/fees/{feeType}', [FeeTypeController::class, 'destroy'])->name('fees.destroy');
     });
 
     // Roles & Permissions management (TH only)

@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             'manage_users',
             'manage_transactions',
             'approve_transactions',
+            'manage_fees',
             'manage_notices',
             'manage_events',
             'manage_gallery',
@@ -49,6 +50,7 @@ class DatabaseSeeder extends Seeder
         $secretaryRole->syncPermissions([
             'manage_users',
             'manage_transactions',
+            'manage_fees',
             'manage_notices',
             'manage_events',
             'manage_gallery',
@@ -56,6 +58,7 @@ class DatabaseSeeder extends Seeder
         $cashierRole->syncPermissions([
             'manage_transactions',
             'approve_transactions',
+            'manage_fees',
         ]);
 
         // 2. Create Users

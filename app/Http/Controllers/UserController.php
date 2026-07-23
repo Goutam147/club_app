@@ -15,36 +15,47 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        // Month filter: default to current month (1-12)
-        $selectedMonth = $request->input('month', now()->month);
-        $selectedYear = now()->year;
+        // Month & Year filter
+        $selectedMonth = (int) $request->input('month', now()->month);
+        $selectedYear = (int) $request->input('year', now()->year);
 
         $users = User::with('roles')
             ->withSum(['transactions as total_donated' => function ($query) {
                 $query->where('type', 'credit')->where('status', 'approved');
             }], 'amount')
-            ->withSum(['transactions as monthly_credit' => function ($query) use ($selectedMonth, $selectedYear) {
-                $query->where('type', 'credit')
-                      ->where('status', 'approved')
-                      ->whereMonth('created_at', $selectedMonth)
-                      ->whereYear('created_at', $selectedYear);
-            }], 'amount')
-            ->withSum(['transactions as monthly_debit' => function ($query) use ($selectedMonth, $selectedYear) {
-                $query->where('type', 'debit')
-                      ->where('status', 'approved')
-                      ->whereMonth('created_at', $selectedMonth)
-                      ->whereYear('created_at', $selectedYear);
-            }], 'amount')
             ->orderBy('name', 'asc')
             ->get();
 
-        // Calculate monthly balance for each user
-        $users->each(function ($user) {
-            $user->monthly_balance = ($user->monthly_credit ?? 0) - ($user->monthly_debit ?? 0);
+        // Active Fee Categories (Events & Monthly)
+        $eventFeeTypes = \App\Models\FeeType::where('status', 'active')->whereIn('type', ['event', 'general'])->get();
+
+        // Calculate monthly amounts and event fee contributions per user
+        $users->each(function ($user) use ($selectedMonth, $selectedYear) {
+            // Get sum of approved transaction items for selected month & year
+            $itemAmount = \App\Models\TransactionItem::whereHas('transaction', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('status', 'approved')->where('type', 'credit');
+            })->where('month', $selectedMonth)->where('year', $selectedYear)->sum('amount');
+
+            // Fallback for legacy transactions created in that month without items
+            if ($itemAmount == 0) {
+                $itemAmount = \App\Models\Transaction::where('user_id', $user->id)
+                    ->where('status', 'approved')
+                    ->where('type', 'credit')
+                    ->whereMonth('created_at', $selectedMonth)
+                    ->whereYear('created_at', $selectedYear)
+                    ->sum('amount');
+            }
+
+            $user->monthly_amount = (float) $itemAmount;
+
+            // Count total paid months for selected year
+            $user->paid_months_in_year = \App\Models\TransactionItem::whereHas('transaction', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('status', 'approved');
+            })->where('year', $selectedYear)->whereNotNull('month')->distinct('month')->count('month');
         });
 
         $roles = Role::all();
-        return view('users.index', compact('users', 'roles', 'selectedMonth'));
+        return view('users.index', compact('users', 'roles', 'selectedMonth', 'selectedYear', 'eventFeeTypes'));
     }
 
     /**

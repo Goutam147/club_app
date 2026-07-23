@@ -57,6 +57,11 @@
                             {{ __('Settings') }}
                         </x-nav-link>
                     @endhasanyrole
+                    @can('manage_fees')
+                        <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">
+                            {{ __('Fees') }}
+                        </x-nav-link>
+                    @endcan
                     @role('TH')
                         <x-nav-link :href="route('roles-permissions.index')" :active="request()->routeIs('roles-permissions.index')">
                             {{ __('Roles') }}
@@ -235,6 +240,16 @@
                     <span class="text-xs font-bold text-slate-750">Settings</span>
                 </a>
             @endhasanyrole
+
+            @can('manage_fees')
+                <!-- Fees Manager -->
+                <a href="{{ route('fees.index') }}" class="flex flex-col items-center gap-2 group">
+                    <div class="h-12 w-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 hover:bg-teal-600 hover:text-white transition duration-150 shadow-sm">
+                        <i class="fa-solid fa-tags text-lg"></i>
+                    </div>
+                    <span class="text-xs font-bold text-slate-750">Fees</span>
+                </a>
+            @endcan
 
             @role('TH')
                 <!-- Roles & Permissions -->

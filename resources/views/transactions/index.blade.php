@@ -102,8 +102,9 @@
                                 <th class="px-4 py-3.5 whitespace-nowrap">Member</th>
                                 <th class="px-4 py-3.5 whitespace-nowrap">Amount</th>
                                 <th class="px-4 py-3.5 whitespace-nowrap">Method & Type</th> 
+                                <th class="px-4 py-3.5 whitespace-nowrap">Price Breakdown</th>
                                 <th class="px-4 py-3.5 whitespace-nowrap">Document</th>
-                                <th class="px-4 py-3.5 whitespace-nowrap">Status & Details</th>
+                                <th class="px-4 py-3.5 whitespace-nowrap">Status & Info</th>
                             </tr>
                         </thead>
                         <tbody id="txn-tbody" class="divide-y divide-slate-50 text-slate-600 bg-white">
@@ -198,6 +199,22 @@
                 }
             }
 
+            // Item price breakdown cell
+            let breakdownHtml = '';
+            if (txn.items && txn.items.length > 0) {
+                breakdownHtml = `<div class="flex flex-wrap gap-1.5 max-w-xs">`;
+                txn.items.forEach(item => {
+                    let label = item.title;
+                    if (item.month_name && item.year) {
+                        label = `${item.month_name} ${item.year} Dues`;
+                    }
+                    breakdownHtml += `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-900 border border-blue-100 shadow-2xs">${label}: <span class="font-extrabold text-emerald-700">₹${item.amount}</span></span>`;
+                });
+                breakdownHtml += `</div>`;
+            } else {
+                breakdownHtml = `<span class="text-xs text-slate-400 italic">General Payment</span>`;
+            }
+
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50/60 transition duration-150';
             tr.innerHTML = `
@@ -215,6 +232,7 @@
                     <div class="text-xs font-extrabold uppercase tracking-wider text-slate-700">${txn.method}</div>
                     <div class="text-[11px] font-bold text-slate-400 uppercase mt-0.5">${txn.type}</div>
                 </td>
+                <td class="px-4 py-3.5 whitespace-nowrap">${breakdownHtml}</td>
                 <td class="px-4 py-3.5 whitespace-nowrap">${docHtml}</td>
                 <td class="px-4 py-3.5 whitespace-nowrap space-y-1">${statusHtml}</td>
             `;

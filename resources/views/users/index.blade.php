@@ -43,7 +43,12 @@
                                 <th class="px-6 py-4">Contact Info</th>
                                 <th class="px-6 py-4">Role/Position</th>
                                 <th class="px-6 py-4">Total Donated</th>
-                                <th class="px-6 py-4">Monthly Status</th>
+                                <th class="px-6 py-4">Monthly Dues ({{ date('F', mktime(0,0,0,$selectedMonth,10)) }})</th>
+                                @if(isset($eventFeeTypes) && $eventFeeTypes->count() > 0)
+                                    @foreach($eventFeeTypes as $ef)
+                                        <th class="px-6 py-4 whitespace-nowrap text-purple-900 bg-purple-50/50">{{ $ef->title }} (₹{{ number_format($ef->default_amount, 2) }})</th>
+                                    @endforeach
+                                @endif
                                 @can('manage_users')
                                     <th class="px-6 py-4">Status</th>
                                     <th class="px-6 py-4 text-right">Actions</th>
@@ -86,18 +91,30 @@
                                     <td class="px-6 py-4 font-black text-emerald-600">
                                         ₹{{ number_format($user->total_donated ?? 0, 2) }}
                                     </td>
-                                    <td class="px-6 py-4">
-                                        @php
-                                            $balance = $user->monthly_balance ?? 0;
-                                        @endphp
-                                        @if($balance > 0)
-                                            <span class="font-extrabold text-emerald-600">₹{{ number_format($balance, 2) }}</span>
-                                        @elseif($balance < 0)
-                                            <span class="font-extrabold text-rose-600">₹{{ number_format(abs($balance), 2) }}</span>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if(($user->monthly_amount ?? 0) > 0)
+                                            <span class="font-extrabold text-base text-emerald-600">₹{{ number_format($user->monthly_amount, 2) }}</span>
                                         @else
-                                            <span class="font-bold text-slate-400">₹0.00</span>
+                                            <span class="font-bold text-sm text-slate-400">₹0.00</span>
                                         @endif
                                     </td>
+                                    @if(isset($eventFeeTypes) && $eventFeeTypes->count() > 0)
+                                        @foreach($eventFeeTypes as $ef)
+                                            @php
+                                                $eventPaidAmt = \App\Models\TransactionItem::where('fee_type_id', $ef->id)
+                                                    ->whereHas('transaction', function($q) use ($user) {
+                                                        $q->where('user_id', $user->id)->where('status', 'approved');
+                                                    })->sum('amount');
+                                            @endphp
+                                            <td class="px-6 py-4 whitespace-nowrap bg-purple-50/20">
+                                                @if($eventPaidAmt > 0)
+                                                    <span class="font-extrabold text-base text-emerald-600">₹{{ number_format($eventPaidAmt, 2) }}</span>
+                                                @else
+                                                    <span class="font-bold text-sm text-slate-400">₹0.00</span>
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                    @endif
                                     @can('manage_users')
                                         <td class="px-6 py-4">
                                             <span class="px-2.5 py-1 text-xs font-extrabold rounded-full tracking-wide uppercase 
